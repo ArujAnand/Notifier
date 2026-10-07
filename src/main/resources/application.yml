@@ -1,0 +1,91 @@
+spring:
+  application:
+    name: investment-sentinel
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/investment_sentinel}
+    username: ${SPRING_DATASOURCE_USERNAME:sentinel_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:sentinel_secret_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# Actuator configuration for health checks & container monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# Custom Application Properties
+app:
+  timezone: ${TIMEZONE:Asia/Kolkata}
+  monitoring:
+    cron: "${MONITORING_CRON:0 0 8 * * ?}"
+    early-drawdown-alerts: ${EARLY_DRAWDOWN_ALERTS:true}
+    review-interval-months: ${REVIEW_INTERVAL_MONTHS:3}
+  sms:
+    provider: ${SMS_PROVIDER:mock}
+    api-key: ${SMS_API_KEY:}
+    sender-id: ${SMS_SENDER_ID:SENTINEL}
+    recipient: ${SMS_RECIPIENT:+919876543210}
+    dlt-template-id: ${SMS_DLT_TEMPLATE_ID:}
+    max-retries: 3
+    retry-delay-ms: 2000
+  market-data:
+    provider: ${MARKET_DATA_PROVIDER:yahoo}
+    alpha-vantage-key: ${ALPHA_VANTAGE_API_KEY:}
+    stale-threshold-hours: 72 # Covers weekend market closure safely
+  investments:
+    atlas:
+      currency: "USD"
+      normal-amount: ${ATLAS_NORMAL_AMOUNT:25.0}
+      drawdown-1: ${ATLAS_DRAWDOWN_1:5.0}
+      amount-1: ${ATLAS_AMOUNT_1:50.0}
+      drawdown-2: ${ATLAS_DRAWDOWN_2:15.0}
+      amount-2: ${ATLAS_AMOUNT_2:75.0}
+      drawdown-3: ${ATLAS_DRAWDOWN_3:25.0}
+      amount-3: ${ATLAS_AMOUNT_3:100.0}
+    gold:
+      currency: "INR"
+      normal-amount: ${GOLD_NORMAL_AMOUNT:2000.0}
+      drawdown-1: ${GOLD_DRAWDOWN_1:5.0}
+      amount-1: ${GOLD_AMOUNT_1:4000.0}
+      drawdown-2: ${GOLD_DRAWDOWN_2:15.0}
+      amount-2: ${GOLD_AMOUNT_2:6000.0}
+      drawdown-3: ${GOLD_DRAWDOWN_3:25.0}
+      amount-3: ${GOLD_AMOUNT_3:8000.0}
+
+logging:
+  level:
+    root: INFO
+    com.investmentsentinel: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN

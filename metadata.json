@@ -1,0 +1,6 @@
+{
+  "name": "Investment Sentinel - Drawdown & SMS System",
+  "description": "Personal investment monitoring and SMS notification system for ATLAS GLOBAL and ICICI Prudential Gold ETF with drawdown tracking and calendar review schedules.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false
+
+app:
+  timezone: Asia/Kolkata
+  monitoring:
+    cron: "0 0 8 * * ?"
+    early-drawdown-alerts: true
+    review-interval-months: 3
+  sms:
+    provider: mock
+    sender-id: TEST
+    recipient: +919876543210
+    max-retries: 2
+    retry-delay-ms: 100
+  market-data:
+    provider: mock
+    stale-threshold-hours: 72

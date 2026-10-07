@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Sentinel - Personal Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-800 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <span class="inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Investment Sentinel
+                </h1>
+                <p class="text-sm text-slate-400 mt-1">
+                    Personal Drawdown Monitor &amp; SMS Alert System &bull; Single-user &bull; No Automated Trading
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <form th:action="@{/monitoring/trigger}" method="post" class="inline">
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors shadow">
+                        ▶ Run Daily Check Now
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <!-- Flash messages -->
+        <div th:if="${successMessage}" class="mt-4 p-4 bg-emerald-950/80 border border-emerald-500 text-emerald-200 rounded-lg text-sm">
+            ✓ <span th:text="${successMessage}"></span>
+        </div>
+        <div th:if="${errorMessage}" class="mt-4 p-4 bg-rose-950/80 border border-rose-500 text-rose-200 rounded-lg text-sm">
+            ⚠ <span th:text="${errorMessage}"></span>
+        </div>
+
+        <!-- System Safety Notice -->
+        <div class="mt-6 p-3 bg-amber-950/40 border border-amber-800/60 rounded-lg text-xs text-amber-300">
+            <strong>System Safety Rule:</strong> This system is NOT an investment advisor and never places trades. It strictly executes your configured drawdown rules and sends SMS reminders.
+        </div>
+
+        <!-- Investment Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div th:each="inv : ${investments}" class="bg-slate-800/70 border border-slate-700 rounded-xl p-6 shadow-lg backdrop-blur">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs uppercase tracking-wider font-semibold text-indigo-400" th:text="${inv.currency}">USD</span>
+                        <h2 class="text-xl font-bold text-white mt-1" th:text="${inv.name}">ATLAS GLOBAL</h2>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-700 text-slate-300"
+                          th:text="${inv.active ? 'Monitoring Active' : 'Paused'}">Active</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mt-6">
+                    <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                        <div class="text-xs text-slate-400">Last Investment</div>
+                        <div class="text-lg font-bold text-white mt-1">
+                            <span th:text="${inv.currency == 'USD' ? '$' : '₹'}"></span>
+                            <span th:text="${inv.lastInvestmentAmount != null ? inv.lastInvestmentAmount : '0'}">50</span>
+                        </div>
+                        <div class="text-xs text-slate-500 mt-0.5" th:text="${inv.lastInvestmentDate != null ? inv.lastInvestmentDate : 'Never recorded'}">07-Jul-2026</div>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                        <div class="text-xs text-slate-400">Next Review Due</div>
+                        <div class="text-lg font-bold text-amber-400 mt-1" th:text="${inv.nextReviewDate != null ? inv.nextReviewDate : 'Immediate'}">
+                            10-Oct-2026
+                        </div>
+                        <div class="text-xs text-slate-500 mt-0.5">3-Month Calendar Interval</div>
+                    </div>
+                </div>
+
+                <!-- Reference & Live Market Stats -->
+                <div class="mt-4 bg-slate-900/80 p-4 rounded-lg border border-slate-800" th:if="${calculations.containsKey(inv.id)}">
+                    <div class="flex justify-between text-xs text-slate-400 pb-2 border-b border-slate-800">
+                        <span>Current Market Value</span>
+                        <span class="font-mono text-white text-sm" th:text="${calculations.get(inv.id).currentValue}">6,050.00</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-400 py-2 border-b border-slate-800">
+                        <span>Baseline Reference Value</span>
+                        <span class="font-mono text-white text-sm" th:text="${calculations.get(inv.id).referenceValue}">6,500.00</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-400 py-2 border-b border-slate-800">
+                        <span>Drawdown from Reference</span>
+                        <span class="font-mono font-bold text-sm"
+                              th:classappend="${calculations.get(inv.id).drawdownPercentage lt 0 ? 'text-rose-400' : 'text-emerald-400'}"
+                              th:text="${calculations.get(inv.id).drawdownPercentage + '%'}">-6.92%</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-400 pt-2">
+                        <span>Suggested Contribution</span>
+                        <span class="font-bold text-emerald-400 text-sm">
+                            <span th:text="${inv.currency == 'USD' ? '$' : '₹'}"></span>
+                            <span th:text="${calculations.get(inv.id).suggestedAmount}">50</span>
+                        </span>
+                    </div>
+                    <div class="mt-2 text-[11px] text-slate-400 italic" th:text="${calculations.get(inv.id).reason}">
+                        Market is ≥5% below reference
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-2 gap-3 mt-6">
+                    <button th:onclick="'openRecordModal(' + ${inv.id} + ', \'' + ${inv.name} + '\', \'' + ${inv.currency} + '\')'"
+                            class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors">
+                        + Record Investment
+                    </button>
+                    <button th:onclick="'openResetRefModal(' + ${inv.id} + ', \'' + ${inv.name} + '\')'"
+                            class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded-lg transition-colors">
+                        ↺ Reset Reference
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Test SMS Section -->
+        <div class="mt-8 bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+            <h3 class="text-sm font-semibold uppercase text-slate-300">SMS Gateway Connectivity Test</h3>
+            <p class="text-xs text-slate-400 mt-1">Verify SMS delivery to your configured mobile number without waiting for market triggers.</p>
+            <form th:action="@{/sms/test}" method="post" class="mt-4 flex flex-col sm:flex-row gap-3">
+                <input type="text" name="message" placeholder="Optional custom test message..."
+                       class="flex-1 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500">
+                <button type="submit" class="px-5 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors">
+                    Send Test SMS
+                </button>
+            </form>
+        </div>
+
+        <!-- History Tables -->
+        <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Notifications Log -->
+            <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-slate-200 mb-3">Recent Notifications Sent</h3>
+                <div class="overflow-x-auto max-h-60 overflow-y-auto text-xs">
+                    <table class="w-full text-left">
+                        <thead class="text-slate-400 border-b border-slate-700">
+                            <tr>
+                                <th class="pb-2">Time</th>
+                                <th class="pb-2">Type</th>
+                                <th class="pb-2">Provider</th>
+                                <th class="pb-2">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 text-slate-300">
+                            <tr th:each="n : ${recentNotifications}">
+                                <td class="py-2" th:text="${#temporals.format(n.sentAt, 'dd-MMM HH:mm')}">07-Oct 08:00</td>
+                                <td class="py-2" th:text="${n.notificationType}">SCHEDULED_REVIEW</td>
+                                <td class="py-2" th:text="${n.provider}">fast2sms</td>
+                                <td class="py-2">
+                                    <span th:class="${n.status == 'SENT' ? 'text-emerald-400' : 'text-rose-400'}" th:text="${n.status}">SENT</span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(recentNotifications)}">
+                                <td colspan="4" class="py-4 text-center text-slate-500">No notifications sent yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Historical Investments -->
+            <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-slate-200 mb-3">Investment History</h3>
+                <div class="overflow-x-auto max-h-60 overflow-y-auto text-xs">
+                    <table class="w-full text-left">
+                        <thead class="text-slate-400 border-b border-slate-700">
+                            <tr>
+                                <th class="pb-2">Date</th>
+                                <th class="pb-2">Amount</th>
+                                <th class="pb-2">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 text-slate-300">
+                            <tr th:each="h : ${historicalInvestments}">
+                                <td class="py-2" th:text="${h.investmentDate}">2026-07-07</td>
+                                <td class="py-2 font-mono" th:text="${h.currency + ' ' + h.amount}">USD 50.00</td>
+                                <td class="py-2 text-slate-400" th:text="${h.notes}">Initial Contribution</td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(historicalInvestments)}">
+                                <td colspan="3" class="py-4 text-center text-slate-500">No historical contributions.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Record Investment Modal -->
+    <div id="recordModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full">
+            <h3 class="text-lg font-bold text-white" id="modalInvTitle">Record Investment</h3>
+            <form th:action="@{/investments/record}" method="post" class="mt-4 space-y-4">
+                <input type="hidden" name="investmentId" id="modalInvId">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Contribution Amount</label>
+                    <input type="number" step="0.01" name="amount" required
+                           class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Investment Date</label>
+                    <input type="date" name="investmentDate" required
+                           class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Notes (Optional)</label>
+                    <input type="text" name="notes" placeholder="e.g. Regular 3-month contribution"
+                           class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white">
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal('recordModal')" class="px-4 py-2 bg-slate-700 text-white rounded-lg text-xs">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">Save Contribution</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reset Reference Modal -->
+    <div id="resetRefModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full">
+            <h3 class="text-lg font-bold text-white">Reset Market Reference</h3>
+            <p class="text-xs text-slate-400 mt-1">This saves an audit entry and updates the baseline from which future drawdowns are measured.</p>
+            <form th:action="@{/references/reset}" method="post" class="mt-4 space-y-4">
+                <input type="hidden" name="investmentId" id="modalRefInvId">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">New Reference Value</label>
+                    <input type="number" step="0.0001" name="newReferenceValue" required
+                           class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Effective Date</label>
+                    <input type="date" name="referenceDate" required
+                           class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Reason for Reset</label>
+                    <input type="text" name="reason" placeholder="e.g. Annual portfolio rebalancing" required
+                           class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white">
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal('resetRefModal')" class="px-4 py-2 bg-slate-700 text-white rounded-lg text-xs">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold">Confirm Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openRecordModal(id, name, currency) {
+            document.getElementById('modalInvId').value = id;
+            document.getElementById('modalInvTitle').innerText = 'Record ' + name + ' (' + currency + ')';
+            document.getElementById('recordModal').classList.remove('hidden');
+        }
+        function openResetRefModal(id, name) {
+            document.getElementById('modalRefInvId').value = id;
+            document.getElementById('resetRefModal').classList.remove('hidden');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
